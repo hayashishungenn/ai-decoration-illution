@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import { RouteGuard } from '../components/RouteGuard';
 import { PageHeader } from '../components/PageHeader';
 import { ProgressBar } from '../components/ProgressBar';
 import { BottomActionBar } from '../components/BottomActionBar';
@@ -8,7 +9,7 @@ import { BudgetCard } from '../components/BudgetCard';
 import { budgets } from '../data/mockData';
 import { useDecorStore } from '../store/useDecorStore';
 
-export function SelectBudgetPage() {
+function SelectBudgetPageContent() {
   const navigate = useNavigate();
   const { formState, setBudget } = useDecorStore();
   const [selectedBudget, setSelectedBudget] = useState<string | null>(formState.budget);
@@ -72,5 +73,14 @@ export function SelectBudgetPage() {
         </button>
       </BottomActionBar>
     </div>
+  );
+}
+
+// 导出带路由守卫的页面组件
+export function SelectBudgetPage() {
+  return (
+    <RouteGuard requiredStep={2}>
+      <SelectBudgetPageContent />
+    </RouteGuard>
   );
 }

@@ -2,15 +2,18 @@
 
 一个基于 React + TypeScript + Vite 的移动端 H5 应用，提供 AI 驱动的全屋定制装修方案设计。
 
+> **版本**: 2.0.0-stable  
+> **技术栈**: React 19 + TypeScript + Vite 8 + Tailwind CSS v4
+
 ## 🚀 技术栈
 
-- **React 18** - UI 框架
-- **TypeScript** - 类型安全
-- **Vite** - 构建工具
-- **Tailwind CSS** - 样式框架
-- **React Router** - 路由管理
+- **React 19** - UI 框架
+- **TypeScript 5.9** - 类型安全
+- **Vite 8** - 构建工具
+- **Tailwind CSS v4** - 样式框架（使用 `@tailwindcss/vite` 插件）
+- **React Router v7** - 路由管理
 - **Framer Motion** - 动画效果
-- **Zustand** - 状态管理
+- **Zustand** - 状态管理（支持 localStorage 持久化）
 
 ## 📦 快速开始
 
@@ -95,6 +98,11 @@ npm run preview
   - 重新选择 → 首页（清空选择）
   - 保存高清方案 → Toast 提示
 
+### 7. 404 页面
+- **路径**: `*`
+- **内容**: 友好的 404 错误页面
+- **自动跳转**: 3 秒后返回首页
+
 ## 🎨 设计特点
 
 - **移动端优先**: 基准宽度 390px，最大宽度 414px
@@ -117,24 +125,27 @@ src/
 │   ├── ProgressBar.tsx  # 进度条
 │   ├── BottomActionBar.tsx # 底部操作栏
 │   ├── LoadingRing.tsx  # 加载动画
-│   └── SuggestionList.tsx  # 建议列表
+│   ├── SuggestionList.tsx  # 建议列表
+│   └── RouteGuard.tsx   # 路由守卫（v2.0 新增）
 ├── pages/              # 页面组件
 │   ├── HomeEntryPage.tsx      # 首页
 │   ├── SelectAreaPage.tsx     # 区域选择
 │   ├── SelectBudgetPage.tsx   # 预算选择
 │   ├── SelectStylePage.tsx    # 风格选择
 │   ├── GeneratingPage.tsx     # AI 生成中
-│   └── ResultPage.tsx         # 结果页面
+│   ├── ResultPage.tsx         # 结果页面
+│   └── NotFoundPage.tsx       # 404 页面（v2.0 新增）
 ├── store/              # 状态管理
 │   └── useDecorStore.ts # Zustand store
 ├── data/               # Mock 数据
 │   └── mockData.ts      # 区域/预算/风格数据
 ├── utils/              # 工具函数
+│   ├── flow.ts          # 流程管理（v2.0 新增）
 │   ├── suggestion.ts    # AI 建议生成
 │   └── format.ts        # 格式化函数
 ├── App.tsx             # 路由配置
 ├── main.tsx            # 入口文件
-└── index.css           # 全局样式
+└── index.css           # 全局样式（Tailwind v4）
 ```
 
 ## 📊 状态管理
@@ -156,17 +167,24 @@ interface FormState {
 - 刷新页面后恢复上次选择
 - 生成时间实时更新
 
-## ✨ 核心功能
+## ✨ v2.0 稳定性改进
 
-- ✅ 完整的 6 页面流程
-- ✅ 4 步选择进度条
-- ✅ 本地数据持久化
-- ✅ AI 建议动态生成（根据选择）
-- ✅ 流畅的页面动画
-- ✅ 移动端适配
-- ✅ Toast 提示反馈
-- ✅ 返回上一步功能
-- ✅ 返回首页功能
+### 新增功能
+- ✅ 轻量级 `RouteGuard` 组件，为关键页面添加流程守卫
+- ✅ 统一的流程管理工具 `utils/flow.ts`
+- ✅ 404 错误页面，支持自动跳转
+- ✅ Tailwind CSS v4 集成（使用 Vite 插件）
+
+### Bug 修复
+- ✅ 修复 `resetForm` 和 `resetToHome` 未调用 `set()` 的问题
+- ✅ 移除所有非空断言（`!`），改用安全访问模式
+- ✅ 完善定时器清理，防止内存泄漏
+- ✅ 添加前置状态校验，防止非法访问
+
+### 代码质量
+- ✅ 所有页面组件添加类型安全的路由守卫
+- ✅ 统一错误处理和边界条件检查
+- ✅ 优化 TypeScript 配置，启用严格模式
 
 ## 📝 Mock 数据
 
@@ -194,14 +212,18 @@ interface FormState {
   ↓ 点击业务类型
 区域选择 (/area) ←→ 返回
   ↓ 选择区域 + 下一步
-预算选择 (/budget) ←→ 返回
+预算选择 (/budget) ←→ 返回 [受 RouteGuard 保护]
   ↓ 选择预算 + 下一步
-风格选择 (/style) ←→ 返回
+风格选择 (/style) ←→ 返回 [受 RouteGuard 保护]
   ↓ 选择风格 + 生成方案
-AI 生成中 (/generating)
+AI 生成中 (/generating) [受 RouteGuard 保护]
   ↓ 自动跳转（2.5 秒）
-结果页面 (/result)
+结果页面 (/result) [受 RouteGuard 保护]
   ↓ 重新选择
+首页 (/)
+  
+404 页面 (*)
+  ↓ 自动跳转（3 秒）
 首页 (/)
 ```
 
@@ -209,26 +231,50 @@ AI 生成中 (/generating)
 
 ### Vite 配置
 ```typescript
-server: {
-  host: '0.0.0.0',  // 允许局域网访问
-  port: 5173,
-  strictPort: true,
-}
-```
+import tailwindcss from '@tailwindcss/vite'
 
-### Tailwind 配置
-- 主色：primary (green-500)
-- 圆角：xl (16px), 2xl (24px), 3xl (32px)
-- 阴影：soft, card
-
-### Zustand 配置
-```typescript
-persist({
-  name: 'decor-storage',
-  partialize: (state) => ({ formState: state.formState }),
+export default defineConfig({
+  plugins: [react(), tailwindcss()],
+  server: {
+    host: '0.0.0.0',
+    port: 5173,
+    strictPort: true,
+  },
 })
 ```
 
-##  License
+### Tailwind CSS v4
+```css
+/* src/index.css */
+@import "tailwindcss";
+```
+
+### 流程守卫
+```typescript
+// 自动校验状态完整性，不完整则重定向
+<RouteGuard requiredStep={2}>
+  <SelectBudgetPageContent />
+</RouteGuard>
+```
+
+## 📄 License
 
 MIT
+
+## 📦 版本历史
+
+### v2.0.0-stable (当前版本)
+- ✨ 新增 RouteGuard 路由守卫组件
+- ✨ 新增 utils/flow.ts 流程管理工具
+- ✨ 新增 NotFoundPage 404 页面
+- 🐛 修复 Zustand store reset 方法 bug
+- 🐛 移除所有非空断言，改用安全访问
+- 🐛 完善定时器清理逻辑
+- ⬆️ 升级到 Tailwind CSS v4
+- ⬆️ 升级到 React 19
+- ⬆️ 升级到 Vite 8
+
+### v1.0.0 (初始版本)
+- 基础功能实现
+- 6 个核心页面
+- 状态管理和持久化

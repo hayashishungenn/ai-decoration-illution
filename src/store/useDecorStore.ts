@@ -74,17 +74,19 @@ export const useDecorStore = create<DecorStore>()(
           formState: { ...state.formState, generatedAt: date },
         })),
 
-      resetForm: () => ({
-        formState: initialState,
-        currentStep: 1,
-        isGenerating: false,
-      }),
+      resetForm: () =>
+        set({
+          formState: initialState,
+          currentStep: 1,
+          isGenerating: false,
+        }),
 
-      resetToHome: () => ({
-        formState: { ...initialState, bizType: 'home' },
-        currentStep: 1,
-        isGenerating: false,
-      }),
+      resetToHome: () =>
+        set({
+          formState: { ...initialState, bizType: 'home' },
+          currentStep: 1,
+          isGenerating: false,
+        }),
     }),
     {
       name: 'decor-storage',

@@ -1,37 +1,89 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import { RouteGuard } from '../components/RouteGuard';
 import { useDecorStore } from '../store/useDecorStore';
+import { canEnterGenerating } from '../utils/flow';
 
-export function GeneratingPage() {
+function GeneratingPageContent() {
   const navigate = useNavigate();
-  const { setIsGenerating, setGeneratedAt } = useDecorStore();
+  const { formState, setIsGenerating, setGeneratedAt } = useDecorStore();
   const [progress, setProgress] = useState(0);
 
+  // 前置校验：如果状态不完整，重定向到相应页面
   useEffect(() => {
+    if (!canEnterGenerating(formState)) {
+      if (!formState.bizType) {
+        navigate('/', { replace: true });
+      } else if (!formState.area) {
+        navigate('/area', { replace: true });
+      } else if (!formState.budget) {
+        navigate('/budget', { replace: true });
+      } else if (!formState.style) {
+        navigate('/style', { replace: true });
+      }
+      return;
+    }
+
+    // 状态完整，开始生成
     setIsGenerating(true);
     setGeneratedAt(new Date().toISOString());
+  }, [formState, navigate, setIsGenerating, setGeneratedAt]);
 
-    // 模拟进度增长
+  // 清理定时器
+  const cleanup = useCallback(() => {
+    setIsGenerating(false);
+  }, [setIsGenerating]);
+
+  useEffect(() => {
+    // 如果状态不完整，不启动定时器
+    if (!canEnterGenerating(formState)) {
+      return;
+    }
+
     const startTime = Date.now();
     const duration = 2500; // 2.5 秒
+    let animationFrameId: number | null = null;
 
-    const timer = setInterval(() => {
+    const updateProgress = () => {
       const elapsed = Date.now() - startTime;
       const newProgress = Math.min((elapsed / duration) * 99, 99);
       setProgress(newProgress);
 
       if (elapsed >= duration) {
-        clearInterval(timer);
+        // 生成完成，延迟后跳转
         setTimeout(() => {
-          setIsGenerating(false);
+          cleanup();
           navigate('/result');
         }, 300);
+      } else {
+        // 继续使用 requestAnimationFrame 更新
+        animationFrameId = requestAnimationFrame(updateProgress);
       }
-    }, 50);
+    };
 
-    return () => clearInterval(timer);
-  }, [navigate, setIsGenerating, setGeneratedAt]);
+    // 启动进度更新
+    animationFrameId = requestAnimationFrame(updateProgress);
+
+    // 清理函数
+    return () => {
+      if (animationFrameId) {
+        cancelAnimationFrame(animationFrameId);
+      }
+    };
+  }, [formState, navigate, cleanup]);
+
+  // 如果状态不完整，显示加载状态
+  if (!canEnterGenerating(formState)) {
+    return (
+      <div className="min-h-screen bg-black flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-8 h-8 border-2 border-green-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-gray-500 text-sm">正在准备生成...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-black flex flex-col items-center justify-center px-5">
@@ -103,5 +155,14 @@ export function GeneratingPage() {
         </motion.div>
       </motion.div>
     </div>
+  );
+}
+
+// 导出带路由守卫的页面组件
+export function GeneratingPage() {
+  return (
+    <RouteGuard requiredStep={4}>
+      <GeneratingPageContent />
+    </RouteGuard>
   );
 }

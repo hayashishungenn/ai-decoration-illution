@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import { RouteGuard } from '../components/RouteGuard';
 import { PageHeader } from '../components/PageHeader';
 import { ProgressBar } from '../components/ProgressBar';
 import { BottomActionBar } from '../components/BottomActionBar';
@@ -8,7 +9,7 @@ import { StyleCard } from '../components/StyleCard';
 import { styles } from '../data/mockData';
 import { useDecorStore } from '../store/useDecorStore';
 
-export function SelectStylePage() {
+function SelectStylePageContent() {
   const navigate = useNavigate();
   const { formState, setStyle } = useDecorStore();
   const [selectedStyle, setSelectedStyle] = useState<string | null>(formState.style);
@@ -74,5 +75,14 @@ export function SelectStylePage() {
         </button>
       </BottomActionBar>
     </div>
+  );
+}
+
+// 导出带路由守卫的页面组件
+export function SelectStylePage() {
+  return (
+    <RouteGuard requiredStep={3}>
+      <SelectStylePageContent />
+    </RouteGuard>
   );
 }

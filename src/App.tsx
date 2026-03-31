@@ -5,6 +5,7 @@ import { SelectBudgetPage } from './pages/SelectBudgetPage';
 import { SelectStylePage } from './pages/SelectStylePage';
 import { GeneratingPage } from './pages/GeneratingPage';
 import { ResultPage } from './pages/ResultPage';
+import { NotFoundPage } from './pages/NotFoundPage';
 
 function App() {
   return (
@@ -17,6 +18,7 @@ function App() {
           <Route path="/style" element={<SelectStylePage />} />
           <Route path="/generating" element={<GeneratingPage />} />
           <Route path="/result" element={<ResultPage />} />
+          <Route path="*" element={<NotFoundPage />} />
         </Routes>
       </div>
     </BrowserRouter>
