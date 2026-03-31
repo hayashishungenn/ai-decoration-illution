@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { RouteGuard } from '../components/RouteGuard';
@@ -9,41 +9,48 @@ function GeneratingPageContent() {
   const navigate = useNavigate();
   const { formState, setIsGenerating, setGeneratedAt } = useDecorStore();
   const [progress, setProgress] = useState(0);
+  const startedRef = useRef(false);
 
-  // 前置校验：如果状态不完整，重定向到相应页面
-  useEffect(() => {
-    if (!canEnterGenerating(formState)) {
-      if (!formState.bizType) {
-        navigate('/', { replace: true });
-      } else if (!formState.area) {
-        navigate('/area', { replace: true });
-      } else if (!formState.budget) {
-        navigate('/budget', { replace: true });
-      } else if (!formState.style) {
-        navigate('/style', { replace: true });
-      }
-      return;
-    }
-
-    // 状态完整，开始生成
-    setIsGenerating(true);
-    setGeneratedAt(new Date().toISOString());
-  }, [formState, navigate, setIsGenerating, setGeneratedAt]);
-
-  // 清理定时器
+  // 清理函数
   const cleanup = useCallback(() => {
     setIsGenerating(false);
   }, [setIsGenerating]);
 
+  // Effect 1: 只负责启动生成（一次性）
   useEffect(() => {
-    // 如果状态不完整，不启动定时器
-    if (!canEnterGenerating(formState)) {
+    // 只依赖必要的前置条件，不依赖整个 formState
+    const hasPrerequisites = 
+      formState.bizType && 
+      formState.area && 
+      formState.budget && 
+      formState.style;
+
+    if (!hasPrerequisites || startedRef.current) {
+      return;
+    }
+
+    startedRef.current = true;
+    setIsGenerating(true);
+    setGeneratedAt(new Date().toISOString());
+  }, [
+    formState.bizType,
+    formState.area,
+    formState.budget,
+    formState.style,
+    setIsGenerating,
+    setGeneratedAt,
+  ]);
+
+  // Effect 2: 只负责进度动画
+  useEffect(() => {
+    if (!startedRef.current) {
       return;
     }
 
     const startTime = Date.now();
     const duration = 2500; // 2.5 秒
     let animationFrameId: number | null = null;
+    let completionTimer: ReturnType<typeof setTimeout> | null = null;
 
     const updateProgress = () => {
       const elapsed = Date.now() - startTime;
@@ -52,7 +59,7 @@ function GeneratingPageContent() {
 
       if (elapsed >= duration) {
         // 生成完成，延迟后跳转
-        setTimeout(() => {
+        completionTimer = setTimeout(() => {
           cleanup();
           navigate('/result');
         }, 300);
@@ -70,8 +77,11 @@ function GeneratingPageContent() {
       if (animationFrameId) {
         cancelAnimationFrame(animationFrameId);
       }
+      if (completionTimer) {
+        clearTimeout(completionTimer);
+      }
     };
-  }, [formState, navigate, cleanup]);
+  }, [navigate, cleanup]);
 
   // 如果状态不完整，显示加载状态
   if (!canEnterGenerating(formState)) {

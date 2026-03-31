@@ -119,3 +119,29 @@ export function getStepByPath(path: string): number {
   };
   return pathMap[path] || 0;
 }
+
+/**
+ * 根据表单状态获取回退路径
+ */
+export function getFallbackPath(formState: FormState, requiredStep: number): string {
+  // 根据已完成的最早步骤返回合适的路径
+  if (!formState.bizType) {
+    return '/';
+  }
+  if (!formState.area) {
+    return '/area';
+  }
+  if (!formState.budget) {
+    return '/budget';
+  }
+  if (!formState.style) {
+    return '/style';
+  }
+  if (!formState.generatedAt) {
+    return '/generating';
+  }
+  
+  // 默认返回上一步
+  const previousStep = requiredStep - 1;
+  return getPathByStep(previousStep) || '/';
+}

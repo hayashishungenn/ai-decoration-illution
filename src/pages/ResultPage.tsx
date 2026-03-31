@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { RouteGuard } from '../components/RouteGuard';
@@ -6,39 +6,18 @@ import { BottomActionBar } from '../components/BottomActionBar';
 import { SuggestionList } from '../components/SuggestionList';
 import { useDecorStore } from '../store/useDecorStore';
 import { generateSuggestions } from '../utils/suggestion';
-import {
-  formatDate,
-  getBudgetPrice,
-  getBudgetName,
-  getStyleName,
-  getAreaName,
-} from '../utils/format';
-import { canEnterResult } from '../utils/flow';
+import { formatDate, getBudgetPrice, getBudgetName, getStyleName, getAreaName } from '../utils/format';
 
 function ResultPageContent() {
   const navigate = useNavigate();
   const { formState, resetToHome } = useDecorStore();
   const [showToast, setShowToast] = useState(false);
 
-  // 前置校验：如果状态不完整，重定向到相应页面
-  useEffect(() => {
-    if (!canEnterResult(formState)) {
-      if (!formState.bizType) {
-        navigate('/', { replace: true });
-      } else if (!formState.area) {
-        navigate('/area', { replace: true });
-      } else if (!formState.budget) {
-        navigate('/budget', { replace: true });
-      } else if (!formState.style) {
-        navigate('/style', { replace: true });
-      }
-    }
-  }, [formState, navigate]);
-
-  // 安全地获取数据，提供默认值
-  const budget = formState.budget || 'standard';
-  const style = formState.style || 'cream';
-  const area = formState.area || 'living-room';
+  // RouteGuard 已保证状态完整，使用类型断言
+  const area = formState.area as string;
+  const budget = formState.budget!;
+  const style = formState.style!;
+  const generatedAt = formState.generatedAt;
 
   const suggestions = generateSuggestions(area, budget, style);
 
@@ -51,18 +30,6 @@ function ResultPageContent() {
     resetToHome();
     navigate('/');
   };
-
-  // 如果数据不完整，显示加载状态
-  if (!canEnterResult(formState)) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-8 h-8 border-2 border-green-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-gray-500 text-sm">正在加载方案...</p>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-gray-50 pb-24">
@@ -95,7 +62,7 @@ function ResultPageContent() {
         <div className="absolute bottom-0 left-0 right-0 p-5 pb-5">
           <h1 className="text-2xl font-bold text-white mb-1.5">您的专属装修方案</h1>
           <p className="text-white/60 text-sm font-medium">
-            生成时间：{formatDate(formState.generatedAt)}
+            生成时间：{formatDate(generatedAt)}
           </p>
         </div>
       </div>

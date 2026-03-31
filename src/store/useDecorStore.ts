@@ -17,6 +17,7 @@ interface DecorStore {
   formState: FormState;
   currentStep: number;
   isGenerating: boolean;
+  _hasHydrated: boolean;
   
   // Actions
   setBizType: (bizType: BizType) => void;
@@ -28,6 +29,7 @@ interface DecorStore {
   setGeneratedAt: (date: string) => void;
   resetForm: () => void;
   resetToHome: () => void;
+  setHasHydrated: (hydrated: boolean) => void;
 }
 
 const initialState: FormState = {
@@ -44,6 +46,7 @@ export const useDecorStore = create<DecorStore>()(
       formState: initialState,
       currentStep: 1,
       isGenerating: false,
+      _hasHydrated: false,
 
       setBizType: (bizType) =>
         set((state) => ({
@@ -87,10 +90,17 @@ export const useDecorStore = create<DecorStore>()(
           currentStep: 1,
           isGenerating: false,
         }),
+
+      setHasHydrated: (hydrated) => set({ _hasHydrated: hydrated }),
     }),
     {
       name: 'decor-storage',
       partialize: (state) => ({ formState: state.formState }),
+      onRehydrateStorage: () => (state, error) => {
+        if (!error && state) {
+          state.setHasHydrated(true);
+        }
+      },
     }
   )
 );

@@ -1,12 +1,6 @@
-import { useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { Navigate } from 'react-router-dom';
 import { useDecorStore } from '../store/useDecorStore';
-import {
-  canEnterBudgetSelection,
-  canEnterStyleSelection,
-  canEnterGenerating,
-  canEnterResult,
-} from '../utils/flow';
+import { getFallbackPath } from '../utils/flow';
 
 interface RouteGuardProps {
   children: React.ReactNode;
@@ -14,49 +8,30 @@ interface RouteGuardProps {
 }
 
 export function RouteGuard({ children, requiredStep }: RouteGuardProps) {
-  const navigate = useNavigate();
-  const location = useLocation();
   const formState = useDecorStore((state) => state.formState);
 
-  useEffect(() => {
-    const checkAccess = () => {
-      let canAccess = false;
+  // 同步计算是否可以访问
+  const canAccess = (() => {
+    switch (requiredStep) {
+      case 2: // 预算选择页
+        return !!(formState.bizType && formState.area);
+      case 3: // 风格选择页
+        return !!(formState.bizType && formState.area && formState.budget);
+      case 4: // 生成页
+        return !!(formState.bizType && formState.area && formState.budget && formState.style);
+      case 5: // 结果页
+        return !!(formState.bizType && formState.area && formState.budget && formState.style && formState.generatedAt);
+      default:
+        return true;
+    }
+  })();
 
-      switch (requiredStep) {
-        case 2: // 预算选择页
-          canAccess = canEnterBudgetSelection(formState);
-          break;
-        case 3: // 风格选择页
-          canAccess = canEnterStyleSelection(formState);
-          break;
-        case 4: // 生成页
-          canAccess = canEnterGenerating(formState);
-          break;
-        case 5: // 结果页
-          canAccess = canEnterResult(formState);
-          break;
-        default:
-          canAccess = true;
-      }
+  // 如果不能访问，计算回退路径
+  const fallbackPath = getFallbackPath(formState, requiredStep);
 
-      if (!canAccess) {
-        // 根据已完成的最早步骤重定向
-        if (!formState.bizType) {
-          navigate('/', { replace: true });
-        } else if (!formState.area) {
-          navigate('/area', { replace: true });
-        } else if (!formState.budget) {
-          navigate('/budget', { replace: true });
-        } else if (!formState.style) {
-          navigate('/style', { replace: true });
-        } else if (!formState.generatedAt) {
-          navigate('/generating', { replace: true });
-        }
-      }
-    };
-
-    checkAccess();
-  }, [formState, navigate, requiredStep, location.pathname]);
+  if (!canAccess) {
+    return <Navigate to={fallbackPath} replace />;
+  }
 
   return <>{children}</>;
 }

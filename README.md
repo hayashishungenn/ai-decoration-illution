@@ -263,7 +263,16 @@ MIT
 
 ## 📦 版本历史
 
-### v2.0.0-stable (当前版本)
+### v2.0.1-stable (当前版本)
+- 🐛 修复 GeneratingPage useEffect 依赖 formState 导致的重复触发风险
+- ✨ RouteGuard 改用声明式 `<Navigate>` 组件，避免先 render 再跳转
+- ✨ 新增 `getFallbackPath` 统一管理回退路径逻辑
+- 🧹 删除 ResultPage 内部重复守卫逻辑和默认兜底值
+- 🧹 删除 postcss.config.js 和 @tailwindcss/postcss 等冗余依赖
+- ✨ Zustand persist 增加 hydration 标志，防止刷新时守卫误判
+- 📝 更新文档说明
+
+### v2.0.0-stable
 - ✨ 新增 RouteGuard 路由守卫组件
 - ✨ 新增 utils/flow.ts 流程管理工具
 - ✨ 新增 NotFoundPage 404 页面
